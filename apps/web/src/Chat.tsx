@@ -43,9 +43,9 @@ export function Chat({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <aside className="chat" role="dialog" aria-label="Chat with the Anki agent">
+    <aside className="chat" role="dialog" aria-label="Chat with OpenClaw">
       <div className="chat-head">
-        <b>Agent</b>
+        <b>OpenClaw</b>
         <button className="link" onClick={onClose}>Close</button>
       </div>
       <div className="chat-log">
@@ -63,7 +63,7 @@ export function Chat({ onClose }: { onClose: () => void }) {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Message the agent"
+          placeholder="Message OpenClaw"
           enterKeyHint="send"
         />
         <button className="primary" disabled={busy || !input.trim()}>Send</button>

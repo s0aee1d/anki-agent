@@ -26,7 +26,7 @@ export function App() {
           {deck ? "‹ Decks" : "Anki"}
         </button>
         <div className="header-actions">
-          <button onClick={() => setChat(true)}>Agent</button>
+          <button onClick={() => setChat(true)}>OpenClaw</button>
           <button onClick={runSync} disabled={sync.kind === "busy"}>
             {sync.kind === "busy" ? "Syncing…" : "Sync"}
           </button>

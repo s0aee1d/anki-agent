@@ -1,0 +1,9 @@
+{
+  "title": "OpenClaw",
+  "label": "Chat with OpenClaw",
+  "close": "Close",
+  "empty": "Ask about your cards, e.g. “Which cards am I failing most?” or “Add 5 cards about …”.",
+  "placeholder": "Message OpenClaw",
+  "send": "Send",
+  "pending": "…"
+}

@@ -1,0 +1,11 @@
+{
+  "cardTitle": "Card",
+  "remaining": "{{count}} left",
+  "noneDue": "No cards due in “{{deck}}”.",
+  "sync": "Sync",
+  "showAnswer": "Show answer",
+  "again": "Again",
+  "hard": "Hard",
+  "good": "Good",
+  "easy": "Easy"
+}

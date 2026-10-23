@@ -6,7 +6,8 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "gate": "tsx src/gate.ts",
-    "devices": "tsx src/devices.ts"
+    "devices": "tsx src/devices.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",
@@ -16,6 +17,7 @@
   "devDependencies": {
     "@types/node": "^20.14.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.9"
   }
 }

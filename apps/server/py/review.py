@@ -54,6 +54,7 @@ def next_card(col, deck):
             "question": out.question_text,
             "answer": out.answer_text,
             "css": out.css,
+            "ord": card.ord,
         },
         "remaining": len(ids),
     }

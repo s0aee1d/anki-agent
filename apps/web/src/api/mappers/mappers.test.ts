@@ -19,11 +19,12 @@ describe("mappers", () => {
   });
 
   it("toCard maps ids and rewrites media in question and answer", () => {
-    expect(toCard({ cardId: 5, question: '<img src="q.png">', answer: '<img src="a.png">', css: ".x{}" })).toEqual({
+    expect(toCard({ cardId: 5, question: '<img src="q.png">', answer: '<img src="a.png">', css: ".x{}", ord: 1 })).toEqual({
       id: 5,
       question: '<img src="/api/media/q.png">',
       answer: '<img src="/api/media/a.png">',
       css: ".x{}",
+      ord: 1,
     });
   });
 
@@ -32,7 +33,7 @@ describe("mappers", () => {
   });
 
   it("toNextCard maps a present card", () => {
-    const r = toNextCard({ card: { cardId: 1, question: "q", answer: "a", css: "" }, remaining: 4 });
+    const r = toNextCard({ card: { cardId: 1, question: "q", answer: "a", css: "", ord: 0 }, remaining: 4 });
     expect(r.card?.id).toBe(1);
     expect(r.remaining).toBe(4);
   });

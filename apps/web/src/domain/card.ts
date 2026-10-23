@@ -4,6 +4,8 @@ export interface Card {
   question: string;
   answer: string;
   css: string;
+  /** Card template index, 0-based. */
+  ord: number;
 }
 
 export interface NextCard {

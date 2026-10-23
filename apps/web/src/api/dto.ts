@@ -13,6 +13,7 @@ export interface CardDto {
   question: string;
   answer: string;
   css: string;
+  ord: number;
 }
 
 export interface NextCardDto {

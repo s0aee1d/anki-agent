@@ -85,6 +85,8 @@ export interface CardInfo {
   question: string;
   answer: string;
   css: string;
+  /** Card template index (0-based); Anki styles cards via `.card{ord+1}`. */
+  ord: number;
 }
 
 export const listDecks = () => study<DeckStats[]>("decks");

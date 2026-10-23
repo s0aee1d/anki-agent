@@ -1,29 +1,16 @@
+/* Design tokens come from Anki itself (ui/tokens/anki-vars.css, AGPL-3.0). */
 :root {
-  --bg: #fafaf9;
-  --fg: #1c1917;
-  --muted: #78716c;
-  --surface: #ffffff;
-  --border: #e7e5e4;
-  --accent: #2563eb;
+  --bg: var(--canvas);
+  --surface: var(--canvas-elevated);
+  --muted: var(--fg-subtle);
+  --accent: var(--button-primary-bg);
   --on-accent: #fff;
-  --info: #2563eb;
-  --danger: #dc2626;
-  --warning: #d97706;
-  --success: #16a34a;
-  --paper: #fff;
-  --radius: 10px;
-  color-scheme: light dark;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #131211;
-    --fg: #f5f5f4;
-    --muted: #a8a29e;
-    --surface: #1c1917;
-    --border: #2e2a27;
-    --accent: #60a5fa;
-  }
+  --info: var(--state-new);
+  --danger: var(--state-learn);
+  --warning: var(--state-buried);
+  --success: var(--state-review);
+  --paper: var(--canvas);
+  --radius: var(--border-radius, 5px);
 }
 
 * { box-sizing: border-box; }
@@ -32,28 +19,31 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
-  font: 16px/1.5 system-ui, sans-serif;
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 /* ---------- atoms ---------- */
 .btn {
-  min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid var(--border);
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--border-subtle);
+  border-bottom-color: var(--shadow);
   border-radius: var(--radius);
-  background: var(--surface);
-  color: inherit;
+  background: var(--button-bg);
+  color: var(--fg);
   font: inherit;
   cursor: pointer;
+  -webkit-appearance: none;
 }
-.btn:disabled { opacity: 0.6; }
+.btn:hover { background: linear-gradient(180deg, var(--button-gradient-start), var(--button-gradient-end)); border-color: var(--shadow); }
+.btn:active { box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35); }
+.btn:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
+.btn:disabled, .btn:disabled:hover { cursor: not-allowed; color: var(--fg-disabled); background: var(--button-gradient-end); box-shadow: none; }
 .btn--block { width: 100%; }
 .btn--link { border: 0; background: none; font-weight: 600; padding: 0; }
-.btn--primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.btn--info { color: var(--info); }
-.btn--success { color: var(--success); }
-.btn--warning { color: var(--warning); }
-.btn--danger { color: var(--danger); }
+.btn--primary { border: 0; background: var(--button-primary-bg); color: #fff; }
+.btn--primary:hover { background: linear-gradient(180deg, var(--button-primary-gradient-start), var(--button-primary-gradient-end)); border: 0; }
+
 
 .text { margin: 4px 0; }
 .text--muted { color: var(--muted); }
@@ -63,37 +53,51 @@ body {
 
 .input {
   flex: 1;
-  min-height: 44px;
-  padding: 0 12px;
+  min-height: 36px;
+  padding: 0 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--surface);
+  background: var(--canvas-inset);
   color: inherit;
   font: inherit;
 }
+.input:focus { outline: none; border-color: var(--border-focus); box-shadow: 0 0 0 2px var(--shadow-focus); }
 
 .badge { font-weight: 600; font-variant-numeric: tabular-nums; }
-.badge--info { color: var(--info); }
-.badge--danger { color: var(--danger); }
-.badge--success { color: var(--success); }
+.badge--info { color: var(--state-new); }
+.badge--danger { color: var(--state-learn); }
+.badge--success { color: var(--state-review); }
+.badge--zero { color: var(--fg-faint); font-weight: normal; }
 
 .html-frame {
   flex: 1;
   min-height: 280px;
   width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--paper);
+  border: 0;
+  background: var(--canvas);
 }
 
 /* ---------- molecules ---------- */
 .list-button { display: flex; justify-content: space-between; align-items: center; text-align: left; }
-.action-bar { display: flex; gap: 8px; position: sticky; bottom: 0; padding-bottom: 8px; }
-.action-bar .btn { flex: 1; font-weight: 600; }
+.btn.list-button { min-height: 0; padding: 4px 12px; border: 0; border-bottom: 1px solid var(--border-subtle); border-radius: 0; background: none; }
+.btn.list-button:hover { background: var(--border-subtle); border-radius: var(--border-radius-medium); border-color: transparent; }
+.list-button__trailing { display: flex; gap: 0; }
+.list-button__trailing .badge { min-width: 4em; text-align: right; }
+.action-bar {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  position: sticky;
+  bottom: 0;
+  padding: 8px 0;
+  background: var(--canvas);
+  border-top: 1px solid var(--border);
+}
+.action-bar .btn { min-width: 60px; margin: 0 6px; font-weight: normal; flex: 0 1 auto; }
 
 .bubble { max-width: 85%; padding: 8px 12px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .bubble--end { align-self: flex-end; background: var(--accent); color: var(--on-accent); }
-.bubble--start { align-self: flex-start; background: var(--surface); border: 1px solid var(--border); }
+.bubble--start { align-self: flex-start; background: var(--canvas-elevated); border: 1px solid var(--border-subtle); }
 .bubble--error { color: var(--danger); }
 
 .submit-field { display: flex; gap: 8px; padding: 8px 0; }
@@ -102,7 +106,7 @@ body {
 .header { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; }
 .header__end { display: flex; gap: 8px; }
 
-.button-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.button-list { list-style: none; margin: 16px 0; padding: 8px; display: grid; gap: 0; background: var(--canvas-glass); border: 1px solid var(--border-subtle); border-radius: var(--border-radius-medium); }
 
 .message-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-bottom: 8px; }
 

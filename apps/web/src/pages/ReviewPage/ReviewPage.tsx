@@ -49,7 +49,8 @@ export function ReviewPage({ deck, onSync }: { deck: string; onSync: () => void 
       />
     );
 
-  const html = `<style>${card.css}</style>${shown ? card.answer : card.question}`;
+  const night = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+  const html = `<style>${card.css}</style><body class="card card${card.ord + 1}${night ? " nightMode night_mode" : ""}">${shown ? card.answer : card.question}</body>`;
   return (
     <FocusLayout
       meta={<Text tone="muted" size="sm">{t("remaining", { count: next.data?.remaining ?? 0 })}</Text>}
@@ -58,10 +59,10 @@ export function ReviewPage({ deck, onSync }: { deck: string; onSync: () => void 
         <ActionBar>
           {shown ? (
             <>
-              <Button tone="danger" onClick={() => rate(1)}>{t("again")}</Button>
-              <Button tone="warning" onClick={() => rate(2)}>{t("hard")}</Button>
-              <Button tone="success" onClick={() => rate(3)}>{t("good")}</Button>
-              <Button tone="info" onClick={() => rate(4)}>{t("easy")}</Button>
+              <Button onClick={() => rate(1)}>{t("again")}</Button>
+              <Button onClick={() => rate(2)}>{t("hard")}</Button>
+              <Button tone="primary" onClick={() => rate(3)}>{t("good")}</Button>
+              <Button onClick={() => rate(4)}>{t("easy")}</Button>
             </>
           ) : (
             <Button tone="primary" onClick={() => setShown(true)}>{t("showAnswer")}</Button>

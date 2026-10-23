@@ -7,6 +7,6 @@ describe("HtmlFrame", () => {
     render(<HtmlFrame title="Preview" html="<p>x</p>" />);
     const f = screen.getByTitle("Preview");
     expect(f).toHaveAttribute("srcdoc", "<p>x</p>");
-    expect(f).toHaveAttribute("sandbox", "allow-same-origin");
+    expect(f).toHaveAttribute("sandbox", "allow-same-origin allow-scripts");
   });
 });

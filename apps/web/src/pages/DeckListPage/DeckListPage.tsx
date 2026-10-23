@@ -19,9 +19,9 @@ export function DeckListPage({ onOpen }: { onOpen: (name: string) => void }) {
         content: d.name,
         trailing: (
           <>
-            <Badge tone="info" title={t("new")}>{d.newCount}</Badge>{" "}
-            <Badge tone="danger" title={t("learning")}>{d.learningCount}</Badge>{" "}
-            <Badge tone="success" title={t("due")}>{d.dueCount}</Badge>
+            <Badge tone={d.newCount ? "info" : "zero"} title={t("new")}>{d.newCount}</Badge>{" "}
+            <Badge tone={d.learningCount ? "danger" : "zero"} title={t("learning")}>{d.learningCount}</Badge>{" "}
+            <Badge tone={d.dueCount ? "success" : "zero"} title={t("due")}>{d.dueCount}</Badge>
           </>
         ),
       }))}

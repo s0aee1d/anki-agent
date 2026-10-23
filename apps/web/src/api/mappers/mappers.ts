@@ -17,6 +17,7 @@ export const toCard = (c: CardDto): Card => ({
   question: withMediaUrls(c.question),
   answer: withMediaUrls(c.answer),
   css: c.css,
+  ord: c.ord,
 });
 
 export const toNextCard = (n: NextCardDto): NextCard => ({

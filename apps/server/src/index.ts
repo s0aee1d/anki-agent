@@ -1,12 +1,18 @@
-import "dotenv/config";
+import "./env.js";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import * as anki from "./anki.js";
+import { authLogout, authRequest, authStatus, requireDevice } from "./auth.js";
 import { streamChat } from "./chat.js";
 
 const app = new Hono();
 
 app.onError((err, c) => c.json({ error: err.message }, 502));
+
+app.use("/api/*", requireDevice);
+app.get("/api/auth/status", authStatus);
+app.post("/api/auth/request", authRequest);
+app.post("/api/auth/logout", authLogout);
 
 app.get("/api/health", async (c) => c.json({ ankiConnect: await anki.invoke("version") }));
 

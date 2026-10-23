@@ -16,9 +16,18 @@ export interface Card {
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, init);
   const body = await res.json();
+  if (res.status === 401) location.reload();
   if (!res.ok) throw new Error(body.error ?? res.statusText);
   return body as T;
 }
+
+export interface AuthState {
+  state: "none" | "pending" | "approved";
+  id?: string;
+}
+
+export const authStatus = () => call<AuthState>("/auth/status");
+export const requestAccess = () => call<AuthState>("/auth/request", { method: "POST" });
 
 export const getDecks = () => call<Deck[]>("/decks");
 

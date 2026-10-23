@@ -122,3 +122,5 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
     border-left: 1px solid var(--border);
   }
 }
+
+.device-id { font-size: 2rem; font-weight: 700; letter-spacing: 0.1em; text-align: center; margin: 16px 0; font-variant-numeric: tabular-nums; }

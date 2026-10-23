@@ -6,7 +6,7 @@ Root contract for humans and AI agents working in this repo. It defines boundari
 
 ```
 apps/
-  server/   Node API: AnkiConnect proxy, OpenClaw chat proxy, auth/device gate
+  server/   Node API: ankicli bridge, OpenClaw chat proxy, auth/device gate
   web/      React PWA (Vite)
     src/
       ui/            product-agnostic design system (atomic design)
@@ -69,7 +69,7 @@ If a piece of code has two owners, split it.
 10. **Tests are required.** New or changed behaviour ships with tests (see §4 and each layer's `AGENT.md`).
 11. **Styling via design tokens.** No hard-coded colors, spacing or font sizes in components; use CSS variables from `styles.css`.
 12. **TypeScript strict.** No `any`, no unchecked casts, no `// @ts-ignore` without a linked reason.
-13. **Secrets stay on the server.** The web app never sees AnkiConnect, OpenClaw tokens or env secrets. Never commit `.env`.
+13. **Secrets stay on the server.** The web app never sees ankicli, OpenClaw OpenClaw tokens or env secrets. Never commit `.env`.
 14. **Accessibility is not optional.** Interactive atoms are keyboard-operable, labelled via props, and use semantic elements.
 15. **One component per file**, named export matching the filename. Import from the layer index only (`ui/atoms`, not `ui/atoms/Button/Button`).
 16. **Unit folders (global).** Applies to every unit in every layer: a component, a hook, a `lib` function, an `api` resource, a `state` module, a mapper. A unit that has anything beyond its own file (a test, types, hooks, styles, stories, fixtures, sub-parts…) lives in a folder named after the unit, with an `index.ts` as its public surface:

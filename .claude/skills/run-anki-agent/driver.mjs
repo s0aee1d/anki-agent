@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Boots an ISOLATED copy of the app (server :3011 + vite :5190, temp device list), drives the
-// real UI in headless Chrome against the live AnkiConnect, screenshots each step, then tears down.
+// real UI in headless Chrome against the live ankicli collection, screenshots each step, then tears down.
 // Never answers cards, syncs, or sends chat messages, so it does not change Anki state.
 // Usage (from repo root): node .claude/skills/run-anki-agent/driver.mjs [outDir]
 import { spawn, execSync } from "node:child_process";

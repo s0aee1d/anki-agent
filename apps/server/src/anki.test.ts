@@ -1,69 +1,88 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { answerCard, getMedia, invoke, listDecks, nextCard } from "./anki.js";
+import { execFile } from "node:child_process";
+import { readFile } from "node:fs/promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const reply = (result: unknown, error: string | null = null) => Response.json({ result, error });
+vi.mock("node:child_process", () => ({ execFile: vi.fn() }));
+vi.mock("node:fs/promises", () => ({ readFile: vi.fn() }));
 
-function stubAnki(handler: (action: string, params: any) => Response) {
-  const fn = vi.fn(async (_url: unknown, init?: RequestInit) => {
-    const { action, params } = JSON.parse(String(init?.body));
-    return handler(action, params);
-  });
-  vi.stubGlobal("fetch", fn);
-  return fn;
+let m: typeof import("./anki.js");
+
+type Handler = (file: string, args: string[]) => { stdout?: string; stderr?: string; code?: string };
+
+const ok = (data: unknown) => ({ stdout: JSON.stringify({ ok: true, data, error: null }) });
+const fail = (message: string) => ({ stdout: JSON.stringify({ ok: false, data: null, error: { code: "X", message } }) });
+
+const calls: { file: string; args: string[] }[] = [];
+
+function stub(handler: Handler) {
+  calls.length = 0;
+  vi.mocked(execFile).mockImplementation(((file: string, args: string[], _o: unknown, cb: Function) => {
+    calls.push({ file, args });
+    const r = handler(file, args);
+    if (r.code) cb(Object.assign(new Error("spawn"), { code: r.code }), "", "");
+    else cb(null, r.stdout ?? "", r.stderr ?? "");
+  }) as never);
 }
 
-afterEach(() => vi.unstubAllGlobals());
+const COLLECTION = { collection_path: "/c/collection.anki2" };
+
+beforeEach(async () => {
+  vi.resetAllMocks();
+  vi.resetModules();
+  m = await import("./anki.js");
+});
 
 describe("anki", () => {
-  it("invoke sends AnkiConnect v6 envelopes and returns the result", async () => {
-    const fn = stubAnki(() => reply(6));
-    await expect(invoke("version")).resolves.toBe(6);
-    expect(JSON.parse(String(fn.mock.calls[0][1]?.body))).toEqual({ action: "version", version: 6, params: {} });
+  it("ankicli runs the CLI with --json and returns data", async () => {
+    stub(() => ok({ a: 1 }));
+    await expect(m.ankicli("deck", "list")).resolves.toEqual({ a: 1 });
+    expect(calls[0].args).toEqual(["--json", "deck", "list"]);
   });
 
-  it("invoke explains when AnkiConnect is unreachable", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("ECONNREFUSED")));
-    await expect(invoke("version")).rejects.toThrow(/Cannot reach AnkiConnect/);
+  it("ankicli explains when the binary is missing", async () => {
+    stub(() => ({ code: "ENOENT" }));
+    await expect(m.ankicli("deck", "list")).rejects.toThrow(/Cannot run ankicli/);
   });
 
-  it("invoke surfaces AnkiConnect errors", async () => {
-    stubAnki(() => reply(null, "collection is not available"));
-    await expect(invoke("x")).rejects.toThrow("collection is not available");
+  it("ankicli surfaces error envelopes", async () => {
+    stub(() => fail("collection locked"));
+    await expect(m.ankicli("deck", "list")).rejects.toThrow("collection locked");
   });
 
-  it("listDecks returns stats for every deck", async () => {
-    stubAnki((a) => (a === "deckNames" ? reply(["A"]) : reply({ A: { deck_id: 1, name: "A" } })));
-    await expect(listDecks()).resolves.toEqual([{ deck_id: 1, name: "A" }]);
+  it("tolerates python-anki's stdout stack dump before the envelope", async () => {
+    stub(() => ({ stdout: 'blocked main thread for 250ms:\n  File "x", line 1\n' + ok({ a: 1 }).stdout }));
+    await expect(m.ankicli("deck", "list")).resolves.toEqual({ a: 1 });
   });
 
-  it("nextCard escapes quotes in the deck name and reports remaining", async () => {
-    let query = "";
-    stubAnki((a, p) => {
-      if (a === "findCards") {
-        query = p.query;
-        return reply([10, 11]);
-      }
-      return reply([{ cardId: 10 }]);
-    });
-    const r = await nextCard('My "Deck"');
-    expect(query).toContain('deck:"My \\"Deck\\""');
-    expect(r).toEqual({ card: { cardId: 10 }, remaining: 2 });
+  it("listDecks runs the bridge once", async () => {
+    stub((_f, a) => (a.includes("collection") ? ok(COLLECTION) : { stdout: '[{"deck_id": 1}]\n' }));
+    await expect(m.listDecks()).resolves.toEqual([{ deck_id: 1 }]);
+    expect(calls.at(-1)?.args.slice(-2)).toEqual(["/c/collection.anki2", "decks"]);
   });
 
-  it("nextCard returns null when nothing is due", async () => {
-    stubAnki(() => reply([]));
-    await expect(nextCard("D")).resolves.toEqual({ card: null, remaining: 0 });
+  it("nextCard passes the deck name through to the bridge", async () => {
+    stub((_f, a) => (a.includes("collection") ? ok(COLLECTION) : { stdout: '{"card": null, "remaining": 0}' }));
+    await expect(m.nextCard('My "Deck"')).resolves.toEqual({ card: null, remaining: 0 });
+    expect(calls.at(-1)?.args.slice(-3)).toEqual(["/c/collection.anki2", "next", 'My "Deck"']);
   });
 
-  it("answerCard returns AnkiConnect's verdict", async () => {
-    stubAnki(() => reply([true]));
-    await expect(answerCard(1, 3)).resolves.toBe(true);
+  it("answerCard applies the answer through the bridge", async () => {
+    stub((_f, a) => (a.includes("collection") ? ok(COLLECTION) : { stdout: '{"ok": true}' }));
+    await expect(m.answerCard(1, 3)).resolves.toBe(true);
+    expect(calls.at(-1)?.args.slice(-4)).toEqual(["/c/collection.anki2", "answer", "1", "3"]);
   });
 
-  it("getMedia decodes base64 and returns null for missing files", async () => {
-    stubAnki(() => reply(Buffer.from("hi").toString("base64")));
-    expect((await getMedia("a.png"))?.toString()).toBe("hi");
-    stubAnki(() => reply(false));
-    await expect(getMedia("nope")).resolves.toBeNull();
+  it("getMedia reads the resolved file and returns null when missing", async () => {
+    stub(() => ok({ path: "/c/collection.media/a.png" }));
+    vi.mocked(readFile).mockResolvedValue(Buffer.from("hi"));
+    expect((await m.getMedia("a.png"))?.toString()).toBe("hi");
+    stub(() => fail('Media file "nope" was not found'));
+    await expect(m.getMedia("nope")).resolves.toBeNull();
+  });
+
+  it("sync runs ankicli sync run", async () => {
+    stub(() => ok({ performed: true }));
+    await m.sync();
+    expect(calls[0].args).toEqual(["--json", "sync", "run"]);
   });
 });

@@ -1,18 +1,72 @@
-const URL = process.env.ANKI_CONNECT_URL ?? "http://127.0.0.1:8765";
+import { execFile } from "node:child_process";
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 
-export async function invoke<T = unknown>(action: string, params: object = {}): Promise<T> {
-  let res: Response;
-  try {
-    res = await fetch(URL, {
-      method: "POST",
-      body: JSON.stringify({ action, version: 6, params }),
+const ANKICLI = process.env.ANKICLI_BIN ?? "ankicli";
+const PYTHON = process.env.ANKI_PYTHON ?? "python3";
+const REVIEW_SCRIPT = fileURLToPath(new URL("../py/review.py", import.meta.url));
+
+interface Envelope<T> {
+  ok: boolean;
+  data: T | null;
+  error: { code: string; message: string } | null;
+}
+
+// Every call opens the collection, so run them one at a time to avoid lock errors.
+let queue: Promise<unknown> = Promise.resolve();
+function serial<T>(job: () => Promise<T>): Promise<T> {
+  const run = queue.then(job, job);
+  queue = run.catch(() => undefined);
+  return run;
+}
+
+function exec(file: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    execFile(file, args, { maxBuffer: 64 * 1024 * 1024 }, (err, stdout, stderr) => {
+      if (err && (err as NodeJS.ErrnoException).code === "ENOENT") {
+        reject(new Error(`Cannot run ${file}. Is it installed and on PATH?`));
+      } else if (err && !stdout) {
+        reject(new Error(stderr.trim() || err.message));
+      } else {
+        resolve({ stdout, stderr });
+      }
     });
-  } catch {
-    throw new Error("Cannot reach AnkiConnect. Is Anki open with the add-on installed?");
-  }
-  const json = (await res.json()) as { result: T; error: string | null };
-  if (json.error) throw new Error(json.error);
-  return json.result;
+  });
+}
+
+// python-anki prints a "blocked main thread" stack dump to stdout when a call is slow;
+// the envelope is the pretty-printed object starting on a line of its own.
+function parseJson<T>(stdout: string): T {
+  const start = /^[{[]/m.exec(stdout)?.index ?? 0;
+  return JSON.parse(stdout.slice(start)) as T;
+}
+
+export function ankicli<T = unknown>(...args: string[]): Promise<T> {
+  return serial(async () => {
+    const { stdout } = await exec(ANKICLI, ["--json", ...args]);
+    const env = parseJson<Envelope<T>>(stdout);
+    if (!env.ok || env.data === null) throw new Error(env.error?.message ?? "ankicli failed");
+    return env.data;
+  });
+}
+
+let collectionPath: Promise<string> | undefined;
+function resolveCollection(): Promise<string> {
+  collectionPath ??= ankicli<{ collection_path: string }>("collection", "info")
+    .then((i) => i.collection_path)
+    .catch((e) => {
+      collectionPath = undefined;
+      throw e;
+    });
+  return collectionPath;
+}
+
+async function study<T>(op: string, ...args: (string | number)[]): Promise<T> {
+  const path = await resolveCollection();
+  return serial(async () => {
+    const { stdout } = await exec(PYTHON, ["-I", REVIEW_SCRIPT, path, op, ...args.map(String)]);
+    return parseJson<T>(stdout.trim().split("\n").at(-1) ?? "");
+  });
 }
 
 export interface DeckStats {
@@ -33,30 +87,26 @@ export interface CardInfo {
   css: string;
 }
 
-export async function listDecks(): Promise<DeckStats[]> {
-  const names = await invoke<string[]>("deckNames");
-  const stats = await invoke<Record<string, DeckStats>>("getDeckStats", { decks: names });
-  return Object.values(stats);
-}
+export const listDecks = () => study<DeckStats[]>("decks");
 
-export async function nextCard(deck: string): Promise<{ card: CardInfo | null; remaining: number }> {
-  const safe = deck.replace(/"/g, '\\"');
-  const ids = await invoke<number[]>("findCards", {
-    query: `deck:"${safe}" (is:due OR is:new) -is:suspended -is:buried`,
-  });
-  if (ids.length === 0) return { card: null, remaining: 0 };
-  const [card] = await invoke<CardInfo[]>("cardsInfo", { cards: [ids[0]] });
-  return { card, remaining: ids.length };
-}
+export const nextCard = (deck: string) => study<{ card: CardInfo | null; remaining: number }>("next", deck);
 
 export async function answerCard(cardId: number, ease: 1 | 2 | 3 | 4): Promise<boolean> {
-  const [ok] = await invoke<boolean[]>("answerCards", { answers: [{ cardId, ease }] });
+  const { ok } = await study<{ ok: boolean }>("answer", cardId, ease);
   return ok;
 }
 
 export async function getMedia(filename: string): Promise<Buffer | null> {
-  const b64 = await invoke<string | false>("retrieveMediaFile", { filename });
-  return b64 ? Buffer.from(b64, "base64") : null;
+  let path: string;
+  try {
+    ({ path } = await ankicli<{ path: string }>("media", "resolve-path", "--name", filename));
+  } catch (e) {
+    if (e instanceof Error && /not found/i.test(e.message)) return null;
+    throw e;
+  }
+  return readFile(path);
 }
 
-export const sync = () => invoke("sync");
+export const sync = () => ankicli("sync", "run");
+
+export const health = () => ankicli<{ note_count: number }>("collection", "info");

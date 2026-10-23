@@ -1,18 +1,18 @@
 ---
 name: run-anki-agent
-description: Run, start, drive, test and screenshot the Anki PWA (apps/web + apps/server) against a live AnkiConnect. Use when asked to run the app, check that it works, smoke-test the UI, or take screenshots.
+description: Run, start, drive, test and screenshot the Anki PWA (apps/web + apps/server) against a live ankicli collection. Use when asked to run the app, check that it works, smoke-test the UI, or take screenshots.
 ---
 
 # Run anki-agent
 
-Two apps in one npm workspace: `apps/server` (Hono API on :3001, proxies AnkiConnect and OpenClaw chat, device-approval gate) and `apps/web` (React/Vite PWA on :5173, proxies `/api` to the server). Paths below are relative to the repo root.
+Two apps in one npm workspace: `apps/server` (Hono API on :3001, reads and writes the Anki collection through ankicli, proxies OpenClaw chat, device-approval gate) and `apps/web` (React/Vite PWA on :5173, proxies `/api` to the server). Paths below are relative to the repo root.
 
 The agent path is `driver.mjs`: it boots an **isolated** server and Vite, drives the real UI in headless Chrome, screenshots each step and tears everything down. It never answers a card, syncs, or sends a chat message, so Anki state is not changed.
 
 ## Prerequisites
 
 - macOS with Google Chrome at `/Applications/Google Chrome.app` (override with `CHROME_PATH=...`).
-- Anki desktop open with the AnkiConnect add-on listening on `127.0.0.1:8765` (check: `curl -s localhost:8765 -d '{"action":"version","version":6}'` returns `{"result": 6, ...}`).
+- `ankicli` installed and configured (check: `ankicli --json doctor env` and `ankicli --json collection info`). Anki desktop must be **closed** (it locks the collection). `ANKI_PYTHON` in `.env` must point at the ankicli venv's Python (see `.env.example`).
 - `.env` exists at the repo root (copy `.env.example`; OpenClaw values are only needed for real chat).
 
 ## Setup
@@ -60,6 +60,6 @@ The app is behind the device gate: the first visit shows "Request access" and a 
 ## Troubleshooting
 
 - `timeout waiting for http://127.0.0.1:3011/...` -> something else holds port 3011 or 5190 (`lsof -iTCP:3011 -iTCP:5190 -sTCP:LISTEN`), or `.env` is missing.
-- Deck list shows an error like "Cannot reach AnkiConnect..." -> Anki is not open or the add-on is not installed.
+- Deck list shows an error like "Cannot run ankicli..." -> `ankicli` is not on PATH (set `ANKICLI_BIN`); a collection-locked error -> quit Anki desktop; a `No module named anki` error -> fix `ANKI_PYTHON`.
 - `Cannot find module 'playwright-core'` -> run `npm install` at the repo root.
 - `executablePath` error -> set `CHROME_PATH` to your Chrome/Chromium binary.

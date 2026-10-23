@@ -13,9 +13,9 @@ describe("useDecks", () => {
   });
 
   it("exposes server errors", async () => {
-    mockApi({ "GET /api/decks": () => Response.json({ error: "Cannot reach AnkiConnect" }, { status: 502 }) });
+    mockApi({ "GET /api/decks": () => Response.json({ error: "Cannot run ankicli" }, { status: 502 }) });
     const { result } = renderHook(() => useDecks(), { wrapper: createWrapper().Wrapper });
     await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error?.message).toBe("Cannot reach AnkiConnect");
+    expect(result.current.error?.message).toBe("Cannot run ankicli");
   });
 });

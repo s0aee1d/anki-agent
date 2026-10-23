@@ -14,7 +14,7 @@ app.get("/api/auth/status", authStatus);
 app.post("/api/auth/request", authRequest);
 app.post("/api/auth/logout", authLogout);
 
-app.get("/api/health", async (c) => c.json({ ankiConnect: await anki.invoke("version") }));
+app.get("/api/health", async (c) => c.json({ ankicli: await anki.health() }));
 
 app.get("/api/decks", async (c) => c.json(await anki.listDecks()));
 

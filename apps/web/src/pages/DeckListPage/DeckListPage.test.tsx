@@ -25,8 +25,8 @@ describe("DeckListPage", () => {
   });
 
   it("shows the server error", async () => {
-    mockApi({ "GET /api/decks": () => Response.json({ error: "Cannot reach AnkiConnect" }, { status: 502 }) });
+    mockApi({ "GET /api/decks": () => Response.json({ error: "Cannot run ankicli" }, { status: 502 }) });
     renderWithProviders(<DeckListPage onOpen={() => {}} />);
-    expect(await screen.findByText("Cannot reach AnkiConnect")).toBeInTheDocument();
+    expect(await screen.findByText("Cannot run ankicli")).toBeInTheDocument();
   });
 });

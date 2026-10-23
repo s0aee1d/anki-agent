@@ -1,13 +1,21 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "../client";
+import type { VocabRequest } from "../../domain";
+import { deckKeys } from "../decks";
 import type { ChatChunkDto } from "../dto";
+import { toChatContextDto } from "../mappers";
 
 /** Streams the agent's reply; calls onText for each text chunk (OpenAI-style SSE). */
-export async function streamChat(message: string, onText: (t: string) => void, signal?: AbortSignal) {
+export async function streamChat(
+  message: string,
+  onText: (t: string) => void,
+  signal?: AbortSignal,
+  vocab?: VocabRequest,
+) {
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify(vocab ? { message, context: toChatContextDto(vocab) } : { message }),
     signal,
   });
   if (!res.ok || !res.body) {
@@ -41,7 +49,14 @@ export interface ChatStreamVars {
   message: string;
   onText: (t: string) => void;
   signal?: AbortSignal;
+  vocab?: VocabRequest;
 }
 
-export const useChatStream = () =>
-  useMutation({ mutationFn: (v: ChatStreamVars) => streamChat(v.message, v.onText, v.signal) });
+/** Streams a chat reply; the agent may have changed the collection, so deck counts are refetched after. */
+export function useChatStream() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: ChatStreamVars) => streamChat(v.message, v.onText, v.signal, v.vocab),
+    onSuccess: () => qc.invalidateQueries({ queryKey: deckKeys.all }),
+  });
+}

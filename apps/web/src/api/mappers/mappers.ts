@@ -1,5 +1,5 @@
-import type { Access, Card, Deck, NextCard, SyncResult } from "../../domain";
-import type { AuthStateDto, CardDto, DeckDto, NextCardDto, SyncDto } from "../dto";
+import type { Access, Card, Deck, NextCard, SyncResult, VocabRequest } from "../../domain";
+import type { AuthStateDto, CardDto, ChatContextDto, DeckDto, NextCardDto, SyncDto } from "../dto";
 
 export const toDeck = (d: DeckDto): Deck => ({
   id: d.deck_id,
@@ -19,6 +19,8 @@ export const toCard = (c: CardDto): Card => ({
   css: c.css,
   ord: c.ord,
 });
+
+export const toChatContextDto = (v: VocabRequest): ChatContextDto => ({ action: "add_vocabulary", ...v });
 
 export const toNextCard = (n: NextCardDto): NextCard => ({
   card: n.card ? toCard(n.card) : null,

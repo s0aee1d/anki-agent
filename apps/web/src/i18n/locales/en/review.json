@@ -7,5 +7,7 @@
   "again": "Again",
   "hard": "Hard",
   "good": "Good",
-  "easy": "Easy"
+  "easy": "Easy",
+  "addVocab": "Add vocabulary",
+  "vocabDraft": "Add “{{text}}” to my vocabulary"
 }

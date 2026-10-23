@@ -3,7 +3,7 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import * as anki from "./anki.js";
 import { authLogout, authRequest, authStatus, requireDevice } from "./auth.js";
-import { streamChat } from "./chat.js";
+import { parseContext, streamChat } from "./chat.js";
 
 const app = new Hono();
 
@@ -36,9 +36,9 @@ app.post("/api/sync", async (c) => {
 });
 
 app.post("/api/chat", async (c) => {
-  const { message } = await c.req.json<{ message?: string }>();
+  const { message, context } = await c.req.json<{ message?: string; context?: unknown }>();
   if (!message?.trim()) return c.json({ error: "message is required" }, 400);
-  return streamChat(message, c.req.raw.signal);
+  return streamChat(message, c.req.raw.signal, parseContext(context));
 });
 
 app.get("/api/media/:name", async (c) => {

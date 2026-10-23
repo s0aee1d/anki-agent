@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toAccess, toCard, toDeck, toNextCard, toSyncResult, withMediaUrls } from "./mappers";
+import { toAccess, toCard, toChatContextDto, toDeck, toNextCard, toSyncResult, withMediaUrls } from "./mappers";
 
 describe("mappers", () => {
   it("toDeck renames wire fields to domain fields", () => {
@@ -26,6 +26,11 @@ describe("mappers", () => {
       css: ".x{}",
       ord: 1,
     });
+  });
+
+  it("toChatContextDto tags the request with its action", () => {
+    const v = { selection: "w", sentence: "s", sourceDeck: "a", targetDeck: "b", cardId: 1, side: "answer" as const };
+    expect(toChatContextDto(v)).toEqual({ action: "add_vocabulary", ...v });
   });
 
   it("toNextCard keeps a null card", () => {

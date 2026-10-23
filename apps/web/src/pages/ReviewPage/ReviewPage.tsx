@@ -1,11 +1,12 @@
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAnswerCard, useNextCard } from "../../api";
 import type { Ease } from "../../domain";
-import { answerShownAtom } from "../../state";
+import { sentenceAround } from "../../lib";
+import { answerShownAtom, cardSelectionAtom, chatDraftAtom, chatOpenAtom, pendingVocabAtom } from "../../state";
 import { Button, HtmlFrame, Text } from "../../ui/atoms";
-import { ActionBar } from "../../ui/molecules";
+import { ActionBar, SelectionTooltip } from "../../ui/molecules";
 import { EmptyState } from "../../ui/organisms";
 import { FocusLayout } from "../../ui/templates";
 
@@ -16,8 +17,28 @@ export function ReviewPage({ deck, onSync }: { deck: string; onSync: () => void 
   const answer = useAnswerCard(deck);
   const [shown, setShown] = useAtom(answerShownAtom);
   const card = next.data?.card ?? null;
+  const [selection, setSelection] = useAtom(cardSelectionAtom);
+  const setPendingVocab = useSetAtom(pendingVocabAtom);
+  const setDraft = useSetAtom(chatDraftAtom);
+  const setChatOpen = useSetAtom(chatOpenAtom);
 
   useEffect(() => setShown(false), [deck, setShown]);
+  useEffect(() => setSelection(null), [card?.id, shown, setSelection]);
+
+  const addVocab = () => {
+    if (!card || !selection) return;
+    setPendingVocab({
+      selection: selection.text,
+      sentence: sentenceAround(selection.block, selection.text),
+      sourceDeck: deck,
+      targetDeck: deck,
+      cardId: card.id,
+      side: shown ? "answer" : "question",
+    });
+    setDraft(t("vocabDraft", { text: selection.text }));
+    setChatOpen(true);
+    setSelection(null);
+  };
 
   const rate = useCallback(
     (ease: Ease) => {
@@ -54,7 +75,12 @@ export function ReviewPage({ deck, onSync }: { deck: string; onSync: () => void 
   return (
     <FocusLayout
       meta={<Text tone="muted" size="sm">{t("remaining", { count: next.data?.remaining ?? 0 })}</Text>}
-      content={<HtmlFrame title={t("cardTitle")} html={html} />}
+      content={
+        <>
+          <HtmlFrame title={t("cardTitle")} html={html} onSelect={setSelection} />
+          {selection && <SelectionTooltip x={selection.x} y={selection.y} label={t("addVocab")} onClick={addVocab} />}
+        </>
+      }
       actions={
         <ActionBar>
           {shown ? (

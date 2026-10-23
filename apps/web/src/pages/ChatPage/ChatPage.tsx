@@ -1,17 +1,19 @@
 import { useAtom } from "jotai";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useChatStream } from "../../api";
+import { useChatStream, useDecks } from "../../api";
 import type { ChatMessage } from "../../domain";
-import { chatDraftAtom, chatMessagesAtom } from "../../state";
+import { chatDraftAtom, chatMessagesAtom, pendingVocabAtom } from "../../state";
 import { Text } from "../../ui/atoms";
-import { SubmitField } from "../../ui/molecules";
+import { ContextChip, SubmitField } from "../../ui/molecules";
 import { MessageList, Panel } from "../../ui/organisms";
 
 export function ChatPage({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation("chat");
   const [msgs, setMsgs] = useAtom(chatMessagesAtom);
   const [draft, setDraft] = useAtom(chatDraftAtom);
+  const [vocab, setVocab] = useAtom(pendingVocabAtom);
+  const decks = useDecks();
   const stream = useChatStream();
   const busy = stream.isPending;
   const abort = useRef<AbortController | null>(null);
@@ -25,6 +27,8 @@ export function ChatPage({ onClose }: { onClose: () => void }) {
     const text = draft.trim();
     if (!text || busy) return;
     setDraft("");
+    const sending = vocab ?? undefined;
+    setVocab(null);
     setMsgs((all) => [
       ...all,
       { id: String(all.length), role: "user", text },
@@ -35,6 +39,7 @@ export function ChatPage({ onClose }: { onClose: () => void }) {
       await stream.mutateAsync({
         message: text,
         signal: abort.current.signal,
+        vocab: sending,
         onText: (chunk) => patchLast((m) => ({ ...m, text: m.text + chunk })),
       });
     } catch (err) {
@@ -44,6 +49,8 @@ export function ChatPage({ onClose }: { onClose: () => void }) {
     }
   }
 
+  const deckNames = [...new Set([...(decks.data?.map((d) => d.name) ?? []), ...(vocab ? [vocab.targetDeck] : [])])];
+
   return (
     <Panel
       label={t("label")}
@@ -51,7 +58,19 @@ export function ChatPage({ onClose }: { onClose: () => void }) {
       closeLabel={t("close")}
       onClose={onClose}
       footer={
-        <SubmitField
+        <>
+          {vocab && (
+            <ContextChip
+              title={t("contextTitle", { text: vocab.selection })}
+              selectLabel={t("targetDeck")}
+              options={deckNames.map((n) => ({ value: n, label: n }))}
+              value={vocab.targetDeck}
+              onChange={(targetDeck) => setVocab({ ...vocab, targetDeck })}
+              dismissLabel={t("removeContext")}
+              onDismiss={() => setVocab(null)}
+            />
+          )}
+          <SubmitField
           value={draft}
           onChange={setDraft}
           onSubmit={send}
@@ -59,7 +78,8 @@ export function ChatPage({ onClose }: { onClose: () => void }) {
           submitLabel={t("send")}
           submitDisabled={busy || !draft.trim()}
           enterKeyHint="send"
-        />
+          />
+        </>
       }
     >
       <MessageList

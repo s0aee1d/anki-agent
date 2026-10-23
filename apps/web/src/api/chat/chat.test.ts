@@ -10,6 +10,13 @@ describe("streamChat", () => {
     expect(onText.mock.calls.map((c) => c[0])).toEqual(["Hel", "lo"]);
   });
 
+  it("sends the vocab request as context", async () => {
+    const net = mockApi({ "POST /api/chat": () => sseResponse(["ok"]) });
+    const vocab = { selection: "w", sentence: "s", sourceDeck: "a", targetDeck: "b", cardId: 1, side: "question" as const };
+    await streamChat("add", vi.fn(), undefined, vocab);
+    expect(net.calls[0].body).toEqual({ message: "add", context: { action: "add_vocabulary", ...vocab } });
+  });
+
   it("ignores malformed frames", async () => {
     mockApi({ "POST /api/chat": () => new Response("data: {oops\n\ndata: [DONE]\n\n") });
     const onText = vi.fn();

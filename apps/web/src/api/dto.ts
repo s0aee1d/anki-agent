@@ -34,3 +34,13 @@ export interface SyncDto {
 export interface ChatChunkDto {
   choices?: Array<{ delta?: { content?: string } }>;
 }
+
+export interface ChatContextDto {
+  action: "add_vocabulary";
+  selection: string;
+  sentence: string;
+  sourceDeck: string;
+  targetDeck: string;
+  cardId: number;
+  side: "question" | "answer";
+}
